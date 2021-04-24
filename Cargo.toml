@@ -1,0 +1,12 @@
+[package]
+name = "nu_plugin_unity"
+version = "0.1.0"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+nu-plugin = "~0"
+nu-protocol = "~0"
+nu-source = "~0"
+nu-errors = "~0"
