@@ -28,6 +28,7 @@ pub struct LogLine<'a> {
     pub message: &'a str,
     pub callstack: &'a str,
     pub trimmed_callstack: &'a str,
+    pub release_log: bool,
 }
 
 impl LogLine<'_> {
@@ -99,12 +100,13 @@ impl UnityLog {
                             message: block.lines().next().unwrap_or(""),
                             callstack: block,
                             trimmed_callstack: trimmed,
+                            release_log: false,
                         })
                     })
                     .flatten() // removes None elements
                     .collect();
 
-                //TODO: check here if we have any lines and if not then we have a player log
+                // check here if we have any lines and if not then we have a release log
                 // that we need to check differently
                 if lines.is_empty() {
                     lines = input
@@ -115,6 +117,7 @@ impl UnityLog {
                                 message: block.lines().next()?,
                                 callstack: block,
                                 trimmed_callstack: block.split_once('\n')?.1,
+                                release_log: true,
                             })
                         })
                         .flatten()
@@ -122,6 +125,8 @@ impl UnityLog {
                 }
 
                 if self.no_collapse {
+                    // this means we have a player log that does not contain the Log statements so
+                    // we just try to split it into blocks and display the information from that
                     lines.sort_by_key(|x| x.message);
                     lines.dedup_by(|a, b| a.same(b));
                 }
@@ -153,7 +158,49 @@ impl UnityLog {
                             UntaggedValue::string(truncated).into_value(tag),
                         );
 
-                        //TODO: add the full stacktrace as a table with colums: method, parameters, line
+                        /*
+                        // add the full stacktrace as a table with columns: method, parameters, line
+                        let table: Vec<Value> = line.callstack.lines().map(|l| {
+                            let mut dict = TaggedDictBuilder::new(tag);
+
+                            if line.release_log {
+                                // handle the splitting differently in release logs
+                                if let Some((start, end)) = l.split_once('(') {
+                                    dict.insert_untagged("method", UntaggedValue::string(start));
+                                    dict.insert_untagged("parameters", UntaggedValue::string(end));
+                                }
+                            } else {
+                                let mut split = l.split_whitespace();
+
+                                let method_name = split.next();
+                                let parameters = split.next();
+                                let line_path = split.next();
+
+                                if let Some(m) = method_name {
+                                    dict.insert_untagged("method", UntaggedValue::string(m))
+                                }
+
+                                if let Some(p) = parameters {
+                                    dict.insert_untagged("parameters", UntaggedValue::string(p))
+                                }
+
+                                if let Some(lp) = line_path {
+                                    dict.insert_untagged("line", UntaggedValue::string(lp))
+                                }
+                            }
+
+                            if dict.is_empty() {
+                                Value::nothing()
+                            } else {
+                                dict.into_value()
+                            }
+                        }).collect();
+
+                        dict.insert_untagged(
+                            "full",
+                            UntaggedValue::table(&table),
+                        );
+                        */
 
                         if dict.is_empty() {
                             Value::nothing()
